@@ -179,6 +179,9 @@ def main() -> None:
     args = parse_args()
     seed_everything(args.seed)
     device = resolve_device(args.device)
+    if device.type == "cpu" and torch.backends.mkldnn.is_available():
+        # Avoid CPU Conv2d crashes seen with some PyTorch/oneDNN/VM combinations.
+        torch.backends.mkldnn.enabled = False
     args.output.mkdir(parents=True, exist_ok=True)
 
     loader = build_loader(args, device)
@@ -225,6 +228,7 @@ def main() -> None:
             "torch_version": torch.__version__,
             "cuda_available": torch.cuda.is_available(),
             "cuda_version": torch.version.cuda,
+            "mkldnn_enabled": torch.backends.mkldnn.enabled,
             "gpu_name": torch.cuda.get_device_name(0)
             if torch.cuda.is_available()
             else None,
